@@ -17,9 +17,17 @@
     isDragging: false,
     dragOffsetX: 0,
     dragOffsetY: 0,
+    isResizingResults: false,
+    resultDrawerHeight: 158,
     movedDuringPointer: false,
     pageContext: null,
     searchIndex: [],
+    resultDrawer: {
+      isOpen: false,
+      title: '',
+      subtitle: '',
+      results: []
+    },
     messages: [
       {
         role: 'assistant',
@@ -61,6 +69,18 @@
         </header>
 
         <main class="pagedot-messages"></main>
+
+        <section class="pagedot-result-drawer" aria-label="Command results" hidden>
+          <div class="pagedot-result-resize" role="separator" aria-label="Resize results" aria-orientation="horizontal"></div>
+          <header class="pagedot-result-drawer-header">
+            <div>
+              <div class="pagedot-result-drawer-title"></div>
+              <div class="pagedot-result-drawer-subtitle"></div>
+            </div>
+            <button class="pagedot-result-drawer-close" type="button" aria-label="Close results">&times;</button>
+          </header>
+          <div class="pagedot-result-drawer-list"></div>
+        </section>
 
         <div class="pagedot-command-menu">
           <button class="pagedot-command-toggle" type="button" aria-expanded="false">
@@ -104,6 +124,12 @@
       commandToggle: root.querySelector('.pagedot-command-toggle'),
       commandList: root.querySelector('.pagedot-commands'),
       commands: root.querySelectorAll('.pagedot-command'),
+      resultDrawer: root.querySelector('.pagedot-result-drawer'),
+      resultResize: root.querySelector('.pagedot-result-resize'),
+      resultDrawerTitle: root.querySelector('.pagedot-result-drawer-title'),
+      resultDrawerSubtitle: root.querySelector('.pagedot-result-drawer-subtitle'),
+      resultDrawerClose: root.querySelector('.pagedot-result-drawer-close'),
+      resultDrawerList: root.querySelector('.pagedot-result-drawer-list'),
       messages: root.querySelector('.pagedot-messages'),
       form: root.querySelector('.pagedot-composer'),
       input: root.querySelector('.pagedot-input')
@@ -114,7 +140,9 @@
     dom.orb.addEventListener('pointerdown', startDrag);
     dom.root.querySelector('.pagedot-header').addEventListener('pointerdown', startDrag);
     window.addEventListener('pointermove', drag);
+    window.addEventListener('pointermove', resizeResultDrawer);
     window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointerup', endResultResize);
 
     dom.orb.addEventListener('click', () => {
       if (!state.movedDuringPointer) openPanel();
@@ -123,6 +151,8 @@
     dom.close.addEventListener('click', closePanel);
     dom.commandToggle.addEventListener('click', toggleCommandMenu);
     dom.commandMenu.addEventListener('wheel', scrollMessagesFromOverlay, { passive: false });
+    dom.resultDrawerClose.addEventListener('click', closeResultDrawer);
+    dom.resultResize.addEventListener('pointerdown', startResultResize);
     dom.commands.forEach((button) => {
       button.addEventListener('click', () => runCommand(button.dataset.command));
     });
@@ -158,7 +188,12 @@
     closeCommandMenu();
 
     const answer = answerCommand(commandId);
-    addMessage('assistant', answer.text, answer.results);
+    addMessage('assistant', answer.text);
+    if (answer.results.length) {
+      showResultDrawer(answer.title, answer.subtitle, answer.results);
+    } else {
+      closeResultDrawer();
+    }
   }
 
   function toggleCommandMenu() {
@@ -232,12 +267,16 @@
 
     if (!results.length) {
       return {
+        title: getCommandTitle(commandId),
+        subtitle: '',
         text: getEmptyCommandText(commandId),
         results: []
       };
     }
 
     return {
+      title: getCommandTitle(commandId),
+      subtitle: getCommandSubtitle(commandId, results.length),
       text: getCommandAnswerText(commandId, results.length),
       results
     };
@@ -271,7 +310,7 @@
       .map((link) => ({
         type: 'link',
         meta: 'Link',
-        text: `${link.label}\n${link.href}`,
+        text: link.label,
         element: link.element,
         href: link.href
       }));
@@ -284,7 +323,7 @@
       .map((link) => ({
         type: 'subpage',
         meta: 'Unterseite',
-        text: `${link.label}\n${link.href}`,
+        text: link.label,
         element: link.element,
         href: link.href
       }));
@@ -299,6 +338,7 @@
         try {
           const url = new URL(anchor.href, window.location.href);
           if (!['http:', 'https:'].includes(url.protocol)) return null;
+          if (isSamePageAnchor(url)) return null;
 
           const href = url.href;
           if (seen.has(href)) return null;
@@ -308,7 +348,7 @@
             element: anchor,
             href,
             url,
-            label: getLinkLabel(anchor, url)
+            label: getLinkLabel(anchor, href)
           };
         } catch {
           return null;
@@ -317,9 +357,18 @@
       .filter(Boolean);
   }
 
-  function getLinkLabel(anchor, url) {
+  function getLinkLabel(anchor, href) {
     const text = anchor.innerText || anchor.textContent || anchor.getAttribute('aria-label') || '';
-    return text.trim().replace(/\s+/g, ' ') || url.pathname || url.hostname;
+    return text.trim().replace(/\s+/g, ' ') || href;
+  }
+
+  function isSamePageAnchor(url) {
+    return Boolean(
+      url.hash &&
+      url.origin === window.location.origin &&
+      url.pathname === window.location.pathname &&
+      url.search === window.location.search
+    );
   }
 
   function getSnippetAround(text, needle) {
@@ -340,7 +389,7 @@
       subpages: `Ich habe ${count} verlinkte Unterseiten dieser Website gefunden.`
     };
 
-    return `${labels[commandId]} Klick auf einen Treffer, um zur Stelle zu springen.`;
+    return `${labels[commandId]} Ich zeige sie unten im Ergebnisbereich.`;
   }
 
   function getEmptyCommandText(commandId) {
@@ -351,6 +400,26 @@
     };
 
     return labels[commandId] || 'Ich habe dazu nichts gefunden.';
+  }
+
+  function getCommandTitle(commandId) {
+    const labels = {
+      dates: 'Datumsangaben',
+      links: 'Links',
+      subpages: 'Unterseiten'
+    };
+
+    return labels[commandId] || 'Ergebnisse';
+  }
+
+  function getCommandSubtitle(commandId, count) {
+    const labels = {
+      dates: `${count} Fundstellen auf dieser Seite`,
+      links: `${count} Links auf dieser Seite`,
+      subpages: `${count} interne Links auf dieser Website`
+    };
+
+    return labels[commandId] || `${count} Ergebnisse`;
   }
 
   function submitOnEnter(event) {
@@ -382,9 +451,69 @@
     dom.messages.scrollTop = dom.messages.scrollHeight;
   }
 
-  function createResultList(results) {
+  function showResultDrawer(title, subtitle, results) {
+    state.resultDrawer = {
+      isOpen: Boolean(results.length),
+      title,
+      subtitle,
+      results
+    };
+
+    renderResultDrawer();
+  }
+
+  function closeResultDrawer() {
+    state.resultDrawer.isOpen = false;
+    renderResultDrawer();
+  }
+
+  function renderResultDrawer() {
+    dom.resultDrawer.hidden = !state.resultDrawer.isOpen;
+    dom.root.classList.toggle('pagedot-has-results', state.resultDrawer.isOpen);
+
+    if (!state.resultDrawer.isOpen) {
+      dom.resultDrawerList.innerHTML = '';
+      return;
+    }
+
+    dom.resultDrawerTitle.textContent = state.resultDrawer.title;
+    dom.resultDrawerSubtitle.textContent = state.resultDrawer.subtitle;
+    setResultDrawerHeight(state.resultDrawerHeight);
+    dom.resultDrawerList.innerHTML = '';
+    dom.resultDrawerList.appendChild(createResultList(state.resultDrawer.results, true));
+  }
+
+  function startResultResize(event) {
+    state.isResizingResults = true;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function resizeResultDrawer(event) {
+    if (!state.isResizingResults) return;
+
+    const panelRect = dom.root.querySelector('.pagedot-panel').getBoundingClientRect();
+    const composerHeight = dom.form.getBoundingClientRect().height + 24;
+    const headerHeight = dom.root.querySelector('.pagedot-header').getBoundingClientRect().height;
+    const maxHeight = Math.max(170, panelRect.height - headerHeight - composerHeight - 78);
+    const nextHeight = panelRect.bottom - composerHeight - event.clientY;
+
+    setResultDrawerHeight(clamp(nextHeight, 120, maxHeight));
+  }
+
+  function endResultResize() {
+    state.isResizingResults = false;
+  }
+
+  function setResultDrawerHeight(height) {
+    state.resultDrawerHeight = height;
+    dom.resultDrawer.style.height = `${height}px`;
+    dom.root.style.setProperty('--pagedot-result-drawer-height', `${height}px`);
+  }
+
+  function createResultList(results, isCompact = false) {
     const list = document.createElement('div');
-    list.className = 'pagedot-results';
+    list.className = isCompact ? 'pagedot-results pagedot-results-compact' : 'pagedot-results';
     const maxScore = Math.max(...results.map((result) => result.score || 0), 1);
 
     results.forEach((result, index) => {

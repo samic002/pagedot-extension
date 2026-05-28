@@ -205,28 +205,69 @@
 
 .pagedot-results {
   display: grid;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 9px;
+  margin-top: 12px;
 }
 
 .pagedot-result {
   width: 100%;
-  border: 1px solid rgba(37, 99, 235, 0.16);
-  border-radius: 12px;
-  padding: 9px 10px;
+  display: grid;
+  gap: 7px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 14px;
+  padding: 10px;
   cursor: pointer;
-  color: #1e3a8a;
-  background: rgba(219, 234, 254, 0.62);
+  color: #1e293b;
+  background:
+    linear-gradient(135deg, rgba(239, 246, 255, 0.96), rgba(224, 242, 254, 0.72));
   font: inherit;
   line-height: 1.4;
   text-align: left;
-  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
 .pagedot-result:hover {
-  border-color: rgba(37, 99, 235, 0.36);
-  background: rgba(191, 219, 254, 0.78);
+  border-color: rgba(37, 99, 235, 0.42);
+  background:
+    linear-gradient(135deg, rgba(219, 234, 254, 0.98), rgba(186, 230, 253, 0.82));
+  box-shadow:
+    0 10px 22px rgba(37, 99, 235, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
   transform: translateY(-1px);
+}
+
+.pagedot-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pagedot-result-label {
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pagedot-result-score {
+  min-width: 42px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: white;
+  background: linear-gradient(135deg, #2563eb, #0891b2);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.pagedot-result-text {
+  display: block;
+  color: #334155;
 }
 
 .pagedot-target-highlight {
@@ -330,13 +371,28 @@
 
   .pagedot-result {
     border-color: rgba(96, 165, 250, 0.24);
-    color: #bfdbfe;
-    background: rgba(30, 64, 175, 0.26);
+    color: #dbeafe;
+    background:
+      linear-gradient(135deg, rgba(30, 64, 175, 0.34), rgba(8, 47, 73, 0.28));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
   .pagedot-result:hover {
     border-color: rgba(96, 165, 250, 0.42);
-    background: rgba(30, 64, 175, 0.38);
+    background:
+      linear-gradient(135deg, rgba(30, 64, 175, 0.48), rgba(8, 47, 73, 0.38));
+  }
+
+  .pagedot-result-label {
+    color: #93c5fd;
+  }
+
+  .pagedot-result-score {
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  }
+
+  .pagedot-result-text {
+    color: #dbeafe;
   }
 
   .pagedot-composer {

@@ -122,6 +122,7 @@
 
     dom.close.addEventListener('click', closePanel);
     dom.commandToggle.addEventListener('click', toggleCommandMenu);
+    dom.commandMenu.addEventListener('wheel', scrollMessagesFromOverlay, { passive: false });
     dom.commands.forEach((button) => {
       button.addEventListener('click', () => runCommand(button.dataset.command));
     });
@@ -172,6 +173,11 @@
     dom.commandToggle.setAttribute('aria-expanded', 'false');
     dom.commandList.hidden = true;
     dom.commandMenu.classList.remove('pagedot-command-menu-open');
+  }
+
+  function scrollMessagesFromOverlay(event) {
+    dom.messages.scrollTop += event.deltaY;
+    event.preventDefault();
   }
 
   function refreshPageContext() {

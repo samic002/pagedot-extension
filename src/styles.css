@@ -17,49 +17,136 @@
   position: absolute;
   inset: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: 46% 54% 50% 50% / 52% 45% 55% 48%;
   cursor: grab;
-  color: white;
+  color: #e0f2fe;
   background:
-    radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.15) 24%, transparent 38%),
-    linear-gradient(135deg, #7c3aed 0%, #2563eb 48%, #06b6d4 100%);
+    radial-gradient(circle at 34% 35%, rgba(224, 242, 254, 0.28), transparent 30%),
+    radial-gradient(circle at 68% 38%, rgba(34, 211, 238, 0.24), transparent 32%),
+    radial-gradient(circle at 48% 68%, rgba(129, 140, 248, 0.2), transparent 36%),
+    radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.18), rgba(15, 23, 42, 0.42) 54%, rgba(15, 23, 42, 0.08) 78%),
+    conic-gradient(from 210deg, rgba(14, 165, 233, 0.46), rgba(99, 102, 241, 0.2), rgba(34, 211, 238, 0.48), rgba(14, 165, 233, 0.46));
+  backdrop-filter: blur(14px) saturate(170%);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  mask-image: radial-gradient(circle, #000 0%, #000 56%, rgba(0, 0, 0, 0.62) 72%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, #000 56%, rgba(0, 0, 0, 0.62) 72%, transparent 100%);
   box-shadow:
-    0 20px 50px rgba(37, 99, 235, 0.34),
-    0 8px 22px rgba(15, 23, 42, 0.2),
-    inset 0 1px 2px rgba(255, 255, 255, 0.5);
-  transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+    0 16px 36px rgba(14, 165, 233, 0.12),
+    0 8px 18px rgba(15, 23, 42, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    inset 0 0 22px rgba(8, 47, 73, 0.22);
+  overflow: hidden;
+  opacity: 0.68;
+  transition: border-radius 260ms ease, filter 180ms ease, opacity 180ms ease, transform 220ms ease, box-shadow 180ms ease;
 }
 
 .pagedot-orb:active {
   cursor: grabbing;
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 .pagedot-orb:hover {
-  transform: translateY(-2px) scale(1.03);
+  filter: saturate(1.42) brightness(1.16);
+  opacity: 0.98;
+  transform: translateY(-4px) scale(1.075) rotate(-2deg);
+  border-radius: 999px;
   box-shadow:
-    0 24px 60px rgba(37, 99, 235, 0.42),
-    0 10px 28px rgba(15, 23, 42, 0.24),
-    inset 0 1px 2px rgba(255, 255, 255, 0.55);
+    0 26px 64px rgba(14, 165, 233, 0.32),
+    0 10px 26px rgba(15, 23, 42, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 0 30px rgba(8, 47, 73, 0.38);
+}
+
+.pagedot-orb:hover .pagedot-orb-scan {
+  animation-duration: 1.35s;
+  opacity: 0.96;
+}
+
+.pagedot-orb:hover .pagedot-orb-ring {
+  transform: rotate(22deg) scale(1.1);
+  border-color: rgba(186, 230, 253, 0.76);
+  border-radius: 999px;
+}
+
+.pagedot-orb:hover .pagedot-orb-core {
+  transform: scale(1.22) rotate(10deg);
+  border-radius: 999px;
+}
+
+.pagedot-orb:hover .pagedot-orb-mark {
+  opacity: 1;
+  transform: scale(1.08);
 }
 
 .pagedot-orb-glow {
   position: absolute;
-  inset: -7px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.35), rgba(6, 182, 212, 0.28));
-  filter: blur(12px);
+  inset: -14px;
+  border-radius: 44% 56% 48% 52% / 50% 44% 56% 50%;
+  background:
+    radial-gradient(circle at 36% 34%, rgba(14, 165, 233, 0.14), transparent 42%),
+    radial-gradient(circle at 66% 62%, rgba(34, 211, 238, 0.08), transparent 48%);
+  filter: blur(17px);
+  opacity: 0.58;
   z-index: -1;
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+
+.pagedot-orb:hover .pagedot-orb-glow {
+  opacity: 1;
+  transform: scale(1.12);
+  border-radius: 999px;
+}
+
+.pagedot-orb-ring,
+.pagedot-orb-scan,
+.pagedot-orb-core {
+  position: absolute;
+  inset: 9px;
+  border-radius: 48% 52% 50% 50% / 50% 48% 52% 50%;
+  pointer-events: none;
+}
+
+.pagedot-orb-ring {
+  border: 1px solid rgba(186, 230, 253, 0.22);
+  background:
+    linear-gradient(rgba(125, 211, 252, 0.1), rgba(125, 211, 252, 0.1)) center / 1px 100% no-repeat,
+    linear-gradient(90deg, rgba(125, 211, 252, 0.1), rgba(125, 211, 252, 0.1)) center / 100% 1px no-repeat,
+    radial-gradient(circle, transparent 48%, rgba(125, 211, 252, 0.12) 49%, transparent 52%);
+  box-shadow:
+    0 0 18px rgba(14, 165, 233, 0.26),
+    inset 0 0 20px rgba(14, 165, 233, 0.12);
+  transition: border-color 180ms ease, transform 260ms ease;
+}
+
+.pagedot-orb-scan {
+  inset: 4px;
+  background:
+    conic-gradient(from 0deg, transparent 0deg, rgba(125, 211, 252, 0.52) 38deg, transparent 76deg);
+  opacity: 0.26;
+  animation: pagedot-scan 5.2s linear infinite;
+  transition: opacity 180ms ease;
+}
+
+.pagedot-orb-core {
+  inset: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(186, 230, 253, 0.46);
+  background: radial-gradient(circle, rgba(224, 242, 254, 0.34), rgba(14, 165, 233, 0.16) 42%, rgba(15, 23, 42, 0.08));
+  box-shadow:
+    0 0 20px rgba(125, 211, 252, 0.34),
+    inset 0 0 12px rgba(255, 255, 255, 0.18);
+  transition: transform 260ms ease;
 }
 
 .pagedot-orb-mark {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  font-size: 24px;
+  font-size: 13px;
   line-height: 1;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  opacity: 0.62;
+  text-shadow:
+    0 0 10px rgba(224, 242, 254, 0.84),
+    0 0 18px rgba(14, 165, 233, 0.44);
+  transition: opacity 180ms ease, transform 220ms ease;
 }
 
 .pagedot-panel {
@@ -131,10 +218,54 @@
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  border-radius: 16px;
-  color: white;
-  background: linear-gradient(135deg, #7c3aed, #2563eb 55%, #06b6d4);
-  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.28);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(125, 211, 252, 0.34);
+  border-radius: 999px;
+  color: #e0f2fe;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(240, 249, 255, 0.72), transparent 30%),
+    radial-gradient(circle at 64% 58%, rgba(125, 211, 252, 0.48), transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.38), rgba(14, 165, 233, 0.34) 48%, rgba(15, 23, 42, 0.16));
+  box-shadow:
+    0 12px 30px rgba(14, 165, 233, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 0 18px rgba(125, 211, 252, 0.16);
+  font-size: 13px;
+  text-shadow:
+    0 0 10px rgba(224, 242, 254, 0.8),
+    0 0 18px rgba(14, 165, 233, 0.42);
+}
+
+.pagedot-avatar::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(224, 242, 254, 0.68);
+  border-radius: 999px;
+  background:
+    linear-gradient(rgba(224, 242, 254, 0.24), rgba(224, 242, 254, 0.24)) center / 1px 100% no-repeat,
+    linear-gradient(90deg, rgba(224, 242, 254, 0.24), rgba(224, 242, 254, 0.24)) center / 100% 1px no-repeat;
+  box-shadow: inset 0 0 14px rgba(125, 211, 252, 0.18);
+}
+
+.pagedot-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 999px;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(224, 242, 254, 0.58) 36deg, transparent 76deg);
+  opacity: 0.9;
+  animation: pagedot-scan 4.2s linear infinite;
+}
+
+.pagedot-avatar {
+  isolation: isolate;
+}
+
+.pagedot-avatar > * {
+  position: relative;
+  z-index: 1;
 }
 
 .pagedot-title {
@@ -644,6 +775,12 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pagedot-scan {
+  to {
+    transform: rotate(360deg);
   }
 }
 

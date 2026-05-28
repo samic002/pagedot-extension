@@ -8,13 +8,17 @@
     root.innerHTML = `
       <button class="pagedot-orb" type="button" aria-label="Open PageDot assistant">
         <span class="pagedot-orb-glow"></span>
-        <span class="pagedot-orb-mark">&#10022;</span>
+        <span class="pagedot-orb-ring"></span>
+        <span class="pagedot-orb-scan"></span>
+        <span class="pagedot-orb-core">
+          <span class="pagedot-orb-mark">&#10022;</span>
+        </span>
       </button>
 
       <section class="pagedot-panel" role="dialog" aria-label="PageDot assistant">
         <header class="pagedot-header">
           <div class="pagedot-brand">
-            <div class="pagedot-avatar">&#10022;</div>
+            <div class="pagedot-avatar"><span>&#10022;</span></div>
             <div>
               <div class="pagedot-title">PageDot</div>
               <div class="pagedot-subtitle">Seitensuche aktiv</div>

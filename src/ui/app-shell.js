@@ -38,6 +38,9 @@
             </div>
             <button class="pagedot-result-drawer-close" type="button" aria-label="Close results">&times;</button>
           </header>
+          <div class="pagedot-result-filter">
+            <input class="pagedot-result-filter-input" type="search" placeholder="Ergebnisse filtern..." aria-label="Filter results">
+          </div>
           <div class="pagedot-result-drawer-list"></div>
         </section>
 
@@ -90,6 +93,7 @@
       resultDrawerTitle: root.querySelector('.pagedot-result-drawer-title'),
       resultDrawerSubtitle: root.querySelector('.pagedot-result-drawer-subtitle'),
       resultDrawerClose: root.querySelector('.pagedot-result-drawer-close'),
+      resultFilterInput: root.querySelector('.pagedot-result-filter-input'),
       resultDrawerList: root.querySelector('.pagedot-result-drawer-list'),
       messages: root.querySelector('.pagedot-messages'),
       form: root.querySelector('.pagedot-composer'),

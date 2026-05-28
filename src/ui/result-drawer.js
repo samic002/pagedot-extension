@@ -5,6 +5,8 @@
   function createResultDrawerController(dom, options = {}) {
     const state = {
       height: INITIAL_RESULT_DRAWER_HEIGHT,
+      filteredResults: [],
+      filterText: '',
       isOpen: false,
       isResizing: false,
       results: [],
@@ -14,6 +16,7 @@
 
     function bind() {
       dom.resultDrawerClose.addEventListener('click', close);
+      dom.resultFilterInput.addEventListener('input', updateFilter);
       dom.resultResize.addEventListener('pointerdown', startResize);
       window.addEventListener('pointermove', resize);
       window.addEventListener('pointerup', endResize);
@@ -24,6 +27,9 @@
       state.title = title;
       state.subtitle = subtitle;
       state.results = results;
+      state.filterText = '';
+      state.filteredResults = results;
+      dom.resultFilterInput.value = '';
       render();
     }
 
@@ -42,13 +48,54 @@
       }
 
       dom.resultDrawerTitle.textContent = state.title;
-      dom.resultDrawerSubtitle.textContent = state.subtitle;
+      dom.resultDrawerSubtitle.textContent = getSubtitle();
       setHeight(state.height);
       dom.resultDrawerList.innerHTML = '';
-      dom.resultDrawerList.appendChild(options.createResultList(state.results, {
+      if (!state.filteredResults.length) {
+        dom.resultDrawerList.appendChild(createEmptyFilterMessage());
+        return;
+      }
+
+      dom.resultDrawerList.appendChild(options.createResultList(state.filteredResults, {
         compact: true,
         onSelect: options.onResultSelect
       }));
+    }
+
+    function updateFilter() {
+      state.filterText = dom.resultFilterInput.value;
+      state.filteredResults = filterResults(state.results, state.filterText);
+      render();
+    }
+
+    function filterResults(results, query) {
+      const normalizedQuery = normalize(query);
+      if (!normalizedQuery) return results;
+
+      return results.filter((result) => {
+        return normalize(`${result.text || ''} ${result.href || ''} ${result.meta || ''}`).includes(normalizedQuery);
+      });
+    }
+
+    function getSubtitle() {
+      if (!state.filterText.trim()) return state.subtitle;
+      return `${state.filteredResults.length} von ${state.results.length} Ergebnissen`;
+    }
+
+    function createEmptyFilterMessage() {
+      const message = document.createElement('div');
+      message.className = 'pagedot-result-empty';
+      message.textContent = 'Keine Ergebnisse fuer diesen Filter.';
+      return message;
+    }
+
+    function normalize(value) {
+      return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
     }
 
     function startResize(event) {

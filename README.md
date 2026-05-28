@@ -26,10 +26,27 @@ After code changes, reload the extension on the browser extensions page and refr
 ```text
 manifest.json
 src/
-  content.js        # UI creation, chat state, drag behavior
-  page-context.js   # page title, URL, metadata, headings, visible text extraction
-  page-search.js    # chunking, tokenization, scoring, answer formatting
-  styles.css   # visual design
+  content.js              # thin orchestration layer
+  page-context.js         # page title, URL, metadata, headings, visible text extraction
+  page-search.js          # chunking, tokenization, scoring
+  commands/
+    dates-command.js      # date extraction command
+    links-command.js      # all links command
+    subpages-command.js   # internal subpages command
+    link-utils.js         # shared link collection helpers
+    registry.js           # command lookup and execution
+  core/
+    config.js             # shared constants
+    utils.js              # shared helpers
+  ui/
+    app-shell.js          # DOM shell creation
+    command-menu.js       # Commands chip/dropdown
+    message-list.js       # chat rendering
+    page-targets.js       # scroll/highlight result target
+    position-controller.js # orb/panel positioning and dragging
+    result-drawer.js      # command results drawer
+    result-list.js        # result card/list rendering
+  styles.css              # visual design
 ```
 
 ## Notes

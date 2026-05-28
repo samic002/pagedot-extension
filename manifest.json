@@ -7,7 +7,25 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/page-context.js", "src/page-search.js", "src/content.js"],
+      "js": [
+        "src/core/config.js",
+        "src/core/utils.js",
+        "src/page-context.js",
+        "src/page-search.js",
+        "src/commands/link-utils.js",
+        "src/commands/dates-command.js",
+        "src/commands/links-command.js",
+        "src/commands/subpages-command.js",
+        "src/commands/registry.js",
+        "src/ui/app-shell.js",
+        "src/ui/result-list.js",
+        "src/ui/message-list.js",
+        "src/ui/page-targets.js",
+        "src/ui/command-menu.js",
+        "src/ui/result-drawer.js",
+        "src/ui/position-controller.js",
+        "src/content.js"
+      ],
       "css": ["src/styles.css"],
       "run_at": "document_idle"
     }

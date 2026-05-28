@@ -4,6 +4,11 @@
   const HIGHLIGHT_CLASS = 'pagedot-target-highlight';
   const { collectPageContext } = window.PageDotContext;
   const { createSearchIndex, searchPageContext } = window.PageDotSearch;
+  const COMMANDS = [
+    { id: 'dates', label: 'Finde Datumsangaben' },
+    { id: 'links', label: 'Finde Links' },
+    { id: 'subpages', label: 'Finde Unterseiten' }
+  ];
 
   if (document.getElementById(APP_ID)) return;
 
@@ -57,6 +62,29 @@
 
         <main class="pagedot-messages"></main>
 
+        <div class="pagedot-command-menu">
+          <button class="pagedot-command-toggle" type="button" aria-expanded="false">
+            <span class="pagedot-command-toggle-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="13" height="13">
+                <path d="M4 7h16M7 12h10M10 17h4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span>Commands</span>
+            <span class="pagedot-command-toggle-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="12" height="12">
+                <path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </button>
+          <div class="pagedot-commands" aria-label="PageDot commands" hidden>
+            ${COMMANDS.map((command) => `
+              <button class="pagedot-command" type="button" data-command="${command.id}">
+                ${command.label}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
         <form class="pagedot-composer">
           <textarea class="pagedot-input" rows="1" placeholder="Frag etwas \u00fcber diese Seite..." aria-label="Message"></textarea>
           <button class="pagedot-send" type="submit" aria-label="Send message">
@@ -72,6 +100,10 @@
       root,
       orb: root.querySelector('.pagedot-orb'),
       close: root.querySelector('.pagedot-close'),
+      commandMenu: root.querySelector('.pagedot-command-menu'),
+      commandToggle: root.querySelector('.pagedot-command-toggle'),
+      commandList: root.querySelector('.pagedot-commands'),
+      commands: root.querySelectorAll('.pagedot-command'),
       messages: root.querySelector('.pagedot-messages'),
       form: root.querySelector('.pagedot-composer'),
       input: root.querySelector('.pagedot-input')
@@ -89,8 +121,13 @@
     });
 
     dom.close.addEventListener('click', closePanel);
+    dom.commandToggle.addEventListener('click', toggleCommandMenu);
+    dom.commands.forEach((button) => {
+      button.addEventListener('click', () => runCommand(button.dataset.command));
+    });
 
     document.addEventListener('pointerdown', (event) => {
+      if (state.isOpen && !dom.commandMenu.contains(event.target)) closeCommandMenu();
       if (state.isOpen && !dom.root.contains(event.target)) closePanel();
     });
 
@@ -109,6 +146,32 @@
 
     dom.input.addEventListener('input', resizeInput);
     dom.input.addEventListener('keydown', submitOnEnter);
+  }
+
+  function runCommand(commandId) {
+    const command = COMMANDS.find((item) => item.id === commandId);
+    if (!command) return;
+
+    refreshPageContext();
+    addMessage('user', command.label);
+    closeCommandMenu();
+
+    const answer = answerCommand(commandId);
+    addMessage('assistant', answer.text, answer.results);
+  }
+
+  function toggleCommandMenu() {
+    const isOpen = dom.commandToggle.getAttribute('aria-expanded') === 'true';
+
+    dom.commandToggle.setAttribute('aria-expanded', String(!isOpen));
+    dom.commandList.hidden = isOpen;
+    dom.commandMenu.classList.toggle('pagedot-command-menu-open', !isOpen);
+  }
+
+  function closeCommandMenu() {
+    dom.commandToggle.setAttribute('aria-expanded', 'false');
+    dom.commandList.hidden = true;
+    dom.commandMenu.classList.remove('pagedot-command-menu-open');
   }
 
   function refreshPageContext() {
@@ -151,6 +214,137 @@
       text: `Ich habe die Seite nach "${message}" durchsucht. Klick auf einen Treffer, um zur Stelle zu springen.`,
       results
     };
+  }
+
+  function answerCommand(commandId) {
+    const commandHandlers = {
+      dates: findDates,
+      links: findLinks,
+      subpages: findSubpages
+    };
+    const results = commandHandlers[commandId]?.() || [];
+
+    if (!results.length) {
+      return {
+        text: getEmptyCommandText(commandId),
+        results: []
+      };
+    }
+
+    return {
+      text: getCommandAnswerText(commandId, results.length),
+      results
+    };
+  }
+
+  function findDates() {
+    const datePattern = /\b(?:\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}\.\s*(?:januar|februar|m\u00e4rz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember)\s+\d{4})\b/gi;
+    const seen = new Set();
+
+    return state.pageContext.blocks.flatMap((block) => {
+      const matches = block.text.match(datePattern) || [];
+
+      return matches.map((match) => {
+        const date = match.trim();
+        const key = `${date}|${block.text}`;
+        if (seen.has(key)) return null;
+        seen.add(key);
+
+        return {
+          type: 'date',
+          meta: 'Datum',
+          text: `${date} - ${getSnippetAround(block.text, date)}`,
+          element: block.element
+        };
+      }).filter(Boolean);
+    });
+  }
+
+  function findLinks() {
+    return collectLinks()
+      .map((link) => ({
+        type: 'link',
+        meta: 'Link',
+        text: `${link.label}\n${link.href}`,
+        element: link.element,
+        href: link.href
+      }));
+  }
+
+  function findSubpages() {
+    return collectLinks()
+      .filter((link) => link.url.origin === window.location.origin)
+      .filter((link) => link.url.pathname !== window.location.pathname || link.url.search)
+      .map((link) => ({
+        type: 'subpage',
+        meta: 'Unterseite',
+        text: `${link.label}\n${link.href}`,
+        element: link.element,
+        href: link.href
+      }));
+  }
+
+  function collectLinks() {
+    const seen = new Set();
+
+    return Array.from(document.querySelectorAll('a[href]'))
+      .filter((anchor) => !anchor.closest(`#${APP_ID}`))
+      .map((anchor) => {
+        try {
+          const url = new URL(anchor.href, window.location.href);
+          if (!['http:', 'https:'].includes(url.protocol)) return null;
+
+          const href = url.href;
+          if (seen.has(href)) return null;
+          seen.add(href);
+
+          return {
+            element: anchor,
+            href,
+            url,
+            label: getLinkLabel(anchor, url)
+          };
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  }
+
+  function getLinkLabel(anchor, url) {
+    const text = anchor.innerText || anchor.textContent || anchor.getAttribute('aria-label') || '';
+    return text.trim().replace(/\s+/g, ' ') || url.pathname || url.hostname;
+  }
+
+  function getSnippetAround(text, needle) {
+    const index = text.toLowerCase().indexOf(needle.toLowerCase());
+    if (index < 0) return text.slice(0, 160);
+
+    const start = Math.max(0, index - 70);
+    const end = Math.min(text.length, index + needle.length + 90);
+    const prefix = start > 0 ? '...' : '';
+    const suffix = end < text.length ? '...' : '';
+    return `${prefix}${text.slice(start, end).trim()}${suffix}`;
+  }
+
+  function getCommandAnswerText(commandId, count) {
+    const labels = {
+      dates: `Ich habe ${count} Datumsfundstellen gefunden.`,
+      links: `Ich habe ${count} Links auf dieser Seite gefunden.`,
+      subpages: `Ich habe ${count} verlinkte Unterseiten dieser Website gefunden.`
+    };
+
+    return `${labels[commandId]} Klick auf einen Treffer, um zur Stelle zu springen.`;
+  }
+
+  function getEmptyCommandText(commandId) {
+    const labels = {
+      dates: 'Ich habe keine Datumsangaben auf dieser Seite gefunden.',
+      links: 'Ich habe keine Links auf dieser Seite gefunden.',
+      subpages: 'Ich habe keine verlinkten Unterseiten dieser Website gefunden.'
+    };
+
+    return labels[commandId] || 'Ich habe dazu nichts gefunden.';
   }
 
   function submitOnEnter(event) {
@@ -206,12 +400,16 @@
 
     const label = document.createElement('span');
     label.className = 'pagedot-result-label';
-    label.textContent = `Treffer ${index + 1}`;
+    label.textContent = `${result.meta || 'Treffer'} ${index + 1}`;
 
     const score = document.createElement('span');
     score.className = 'pagedot-result-score';
-    score.textContent = `${getRelativeScore(result.score, maxScore)}%`;
-    score.title = `Raw score: ${result.score}`;
+    if (typeof result.score === 'number') {
+      score.textContent = `${getRelativeScore(result.score, maxScore)}%`;
+      score.title = `Raw score: ${result.score}`;
+    } else {
+      score.textContent = result.meta || result.type || 'Fund';
+    }
 
     header.append(label, score);
     return header;

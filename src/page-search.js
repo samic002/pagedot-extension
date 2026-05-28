@@ -10,12 +10,21 @@
   ]);
 
   function createSearchIndex(pageContext) {
-    const chunks = chunkText(pageContext.text, 850, 180);
+    const blocks = pageContext.blocks?.length
+      ? pageContext.blocks
+      : [{ text: pageContext.text, element: null }];
+    const chunks = blocks.flatMap((block) => {
+      return chunkText(block.text, 850, 180).map((text) => ({
+        text,
+        element: block.element || null
+      }));
+    });
 
-    return chunks.map((text, index) => ({
+    return chunks.map((chunk, index) => ({
       index,
-      text,
-      tokens: tokenize(text)
+      text: chunk.text,
+      element: chunk.element,
+      tokens: tokenize(chunk.text)
     }));
   }
 

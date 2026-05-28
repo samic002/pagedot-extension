@@ -1,8 +1,9 @@
 (() => {
   const APP_ID = 'pagedot-root';
   const STORAGE_KEY = 'pagedot-position';
+  const HIGHLIGHT_CLASS = 'pagedot-target-highlight';
   const { collectPageContext } = window.PageDotContext;
-  const { createSearchIndex, searchPageContext, formatSearchAnswer } = window.PageDotSearch;
+  const { createSearchIndex, searchPageContext } = window.PageDotSearch;
 
   if (document.getElementById(APP_ID)) return;
 
@@ -101,7 +102,9 @@
       addMessage('user', message);
       dom.input.value = '';
       resizeInput();
-      addMessage('assistant', await answerQuestion(message));
+
+      const answer = await answerQuestion(message);
+      addMessage('assistant', answer.text, answer.results);
     });
 
     dom.input.addEventListener('input', resizeInput);
@@ -130,15 +133,24 @@
     console.log('[PageDot] User message:', message);
 
     if (!state.searchIndex.length) {
-      return 'Ich konnte auf dieser Seite keinen durchsuchbaren Text finden.';
+      return {
+        text: 'Ich konnte auf dieser Seite keinen durchsuchbaren Text finden.',
+        results: []
+      };
     }
 
     const results = searchPageContext(message, state.searchIndex);
     if (!results.length) {
-      return 'Ich habe dazu im Seiteninhalt nichts Passendes gefunden.';
+      return {
+        text: 'Ich habe dazu im Seiteninhalt nichts Passendes gefunden.',
+        results: []
+      };
     }
 
-    return formatSearchAnswer(message, results);
+    return {
+      text: `Ich habe die Seite nach "${message}" durchsucht. Klick auf einen Treffer, um zur Stelle zu springen.`,
+      results
+    };
   }
 
   function submitOnEnter(event) {
@@ -147,8 +159,8 @@
     dom.form.requestSubmit();
   }
 
-  function addMessage(role, text) {
-    state.messages.push({ role, text });
+  function addMessage(role, text, results = []) {
+    state.messages.push({ role, text, results });
     renderMessages();
   }
 
@@ -159,10 +171,50 @@
       const bubble = document.createElement('div');
       bubble.className = `pagedot-message pagedot-message-${message.role}`;
       bubble.textContent = message.text;
+
+      if (message.results?.length) {
+        bubble.appendChild(createResultList(message.results));
+      }
+
       dom.messages.appendChild(bubble);
     }
 
     dom.messages.scrollTop = dom.messages.scrollHeight;
+  }
+
+  function createResultList(results) {
+    const list = document.createElement('div');
+    list.className = 'pagedot-results';
+
+    results.forEach((result, index) => {
+      const button = document.createElement('button');
+      button.className = 'pagedot-result';
+      button.type = 'button';
+      button.textContent = `${index + 1}. ${result.text}`;
+      button.addEventListener('click', () => scrollToResult(result));
+      list.appendChild(button);
+    });
+
+    return list;
+  }
+
+  function scrollToResult(result) {
+    const target = result.element;
+    if (!target || !document.documentElement.contains(target)) return;
+
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'nearest'
+    });
+
+    target.classList.remove(HIGHLIGHT_CLASS);
+    target.getBoundingClientRect();
+    target.classList.add(HIGHLIGHT_CLASS);
+
+    setTimeout(() => {
+      target.classList.remove(HIGHLIGHT_CLASS);
+    }, 1800);
   }
 
   function openPanel() {

@@ -9,7 +9,8 @@
     const headings = Array.from(document.querySelectorAll('h1, h2, h3'))
       .map((heading) => cleanText(heading.innerText || heading.textContent || ''))
       .filter(Boolean);
-    const bodyText = collectVisibleText(document.body, options.ignoreRootId);
+    const blocks = collectVisibleTextBlocks(document.body, options.ignoreRootId);
+    const bodyText = cleanText(blocks.map((block) => block.text).join(' '));
 
     const text = [
       title ? `Titel: ${title}` : '',
@@ -24,15 +25,17 @@
       url: window.location.href,
       description,
       headings,
+      blocks,
       text
     };
   }
 
-  function collectVisibleText(root, ignoreRootId) {
-    if (!root) return '';
+  function collectVisibleTextBlocks(root, ignoreRootId) {
+    if (!root) return [];
 
     const ignoredTags = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG', 'CANVAS', 'IFRAME']);
     const ignoredSelector = ignoreRootId ? `#${CSS.escape(ignoreRootId)}` : null;
+    const blockSelector = 'article, section, main, aside, header, footer, nav, p, li, td, th, blockquote, pre, h1, h2, h3, h4, h5, h6, div';
     const walker = document.createTreeWalker(
       root,
       NodeFilter.SHOW_TEXT,
@@ -55,12 +58,23 @@
       }
     );
 
-    const parts = [];
+    const blockMap = new Map();
     while (walker.nextNode()) {
-      parts.push(cleanText(walker.currentNode.textContent || ''));
+      const text = cleanText(walker.currentNode.textContent || '');
+      const element = walker.currentNode.parentElement?.closest(blockSelector) || walker.currentNode.parentElement;
+      if (!element) continue;
+
+      const current = blockMap.get(element) || [];
+      current.push(text);
+      blockMap.set(element, current);
     }
 
-    return cleanText(parts.join(' '));
+    return Array.from(blockMap.entries())
+      .map(([element, parts]) => ({
+        element,
+        text: cleanText(parts.join(' '))
+      }))
+      .filter((block) => block.text);
   }
 
   function cleanText(text) {
